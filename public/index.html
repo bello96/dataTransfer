@@ -493,7 +493,12 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        const socket = io({
+            transports: ['polling'], // 只使用polling，更适合Vercel
+            timeout: 20000,
+            forceNew: true,
+            autoConnect: true
+        });
         const roomContainer = document.getElementById('room-container');
         const fileTransferContainer = document.getElementById('file-transfer-container');
         const createRoomBtn = document.getElementById('create-room');
@@ -511,6 +516,28 @@
         let currentUserNumber;
         let roomUsers = [];
         let userColors = {}; // 存储用户颜色
+
+        // Socket连接状态监听
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            createRoomBtn.disabled = false;
+            joinRoomBtn.disabled = false;
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            alert('连接服务器失败，请刷新页面重试');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            createRoomBtn.disabled = true;
+            joinRoomBtn.disabled = true;
+        });
+
+        socket.on('connected', (data) => {
+            console.log('Server confirmed connection:', data);
+        });
 
         // 生成用户唯一颜色
         function generateUserColor(userNumber) {
