@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+    <title>文件互传</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        #room-container {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        #file-transfer-container {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .room-info {
+            background: linear-gradient(135deg, #84fab0, #8fd3f4);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .room-info h2 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .room-id {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .user-info {
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .users-list {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+
+        .user-item {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            color: white;
+            font-weight: 500;
+        }
+
+        .file-item {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+            text-align: left;
+        }
+
+        .file-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 15px;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+
+        .file-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .file-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-left: 10px;
+            min-width: 60px;
+        }
+
+        .file-btn {
+            padding: 3px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            transition: all 0.2s ease;
+            min-height: 24px;
+            white-space: nowrap;
+        }
+
+        .preview-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .preview-btn:hover {
+            background: #45a049;
+        }
+
+        .download-btn {
+            background: #2196F3;
+            color: white;
+        }
+
+        .download-btn:hover {
+            background: #1976D2;
+        }
+
+        .progress-container {
+            margin-top: 10px;
+        }
+
+        .progress-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 25px 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .file-upload-area.dragover {
+            border-color: #f5576c;
+            background: linear-gradient(135deg, rgba(245, 87, 108, 0.1), rgba(240, 147, 251, 0.1));
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .messages-container {
+            margin-top: 25px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+
+        #messages {
+            list-style: none;
+            padding: 0;
+        }
+
+        #messages li {
+            background: white;
+            margin: 8px 0;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            animation: messageSlideIn 0.3s ease-out;
+        }
+
+        .message-me {
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            color: white;
+            margin-left: 20px;
+        }
+
+        .message-peer {
+            background: linear-gradient(135deg, #84fab0, #8fd3f4) !important;
+            color: white;
+            margin-right: 20px;
+        }
+
+        .download-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e1e1e1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-disconnected {
+            background: #f44336;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
+
+        .connection-status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>文件互传</h1>
+        </div>
+
+        <div id="room-container">
+            <div class="input-group">
+                <input type="text" id="room-id" placeholder="请输入房间号">
+            </div>
+            <div class="button-group">
+                <button id="create-room" class="btn btn-primary">创建房间</button>
+                <button id="join-room" class="btn btn-secondary">加入房间</button>
+            </div>
+        </div>
+
+        <div id="file-transfer-container" class="hidden">
+            <div class="room-info">
+                <h2>📡 房间信息</h2>
+                <div class="room-id" id="room-name"></div>
+                <div class="user-info" id="user-info"></div>
+                <div class="users-list" id="users-list"></div>
+            </div>
+
+            <div class="connection-status" id="connection-status">
+                <span class="status-indicator status-disconnected"></span>
+                等待连接...
+            </div>
+
+            <div class="file-upload-area" id="file-upload-area">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">点击选择文件或拖拽到此处</div>
+                <div class="upload-hint">支持图片、视频、音频等所有格式</div>
+                <input type="file" id="file-input">
+            </div>
+
+            <div class="messages-container">
+                <ul id="messages"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const roomContainer = document.getElementById('room-container');
+        const fileTransferContainer = document.getElementById('file-transfer-container');
+        const createRoomBtn = document.getElementById('create-room');
+        const joinRoomBtn = document.getElementById('join-room');
+        const roomIdInput = document.getElementById('room-id');
+        const roomNameSpan = document.getElementById('room-name');
+        const fileInput = document.getElementById('file-input');
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const messages = document.getElementById('messages');
+        const connectionStatus = document.getElementById('connection-status');
+
+        let currentRoom;
+        let pendingFile;
+        let currentUserName;
+        let currentUserNumber;
+        let roomUsers = [];
+        let userColors = {}; // 存储用户颜色
+
+        // 生成用户唯一颜色
+        function generateUserColor(userNumber) {
+            const colors = [
+                'linear-gradient(135deg, #667eea, #764ba2)', // 房主：紫色
+                'linear-gradient(135deg, #f093fb, #f5576c)', // 2号：粉色
+                'linear-gradient(135deg, #4facfe, #00f2fe)', // 3号：蓝色
+                'linear-gradient(135deg, #43e97b, #38f9d7)', // 4号：绿色
+                'linear-gradient(135deg, #fa709a, #fee140)', // 5号：橙色
+                'linear-gradient(135deg, #a8edea, #fed6e3)', // 6号：薄荷色
+                'linear-gradient(135deg, #ff9a9e, #fecfef)', // 7号：玫瑰色
+                'linear-gradient(135deg, #ffecd2, #fcb69f)', // 8号：桃色
+            ];
+            
+            if (userNumber <= colors.length) {
+                return colors[userNumber - 1];
+            } else {
+                // 超过预设颜色，随机生成
+                const hue = (userNumber * 137.5) % 360; // 黄金比例分布
+                return `linear-gradient(135deg, hsl(${hue}, 70%, 60%), hsl(${(hue + 30) % 360}, 70%, 70%))`;
+            }
+        }
+
+        // 获取用户颜色
+        function getUserColor(userNumber) {
+            if (!userColors[userNumber]) {
+                userColors[userNumber] = generateUserColor(userNumber);
+            }
+            return userColors[userNumber];
+        }
+
+        // 文件上传区域点击事件
+        fileUploadArea.onclick = () => {
+            fileInput.click();
+        };
+
+        // 拖拽功能
+        fileUploadArea.ondragover = (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        };
+
+        fileUploadArea.ondragleave = () => {
+            fileUploadArea.classList.remove('dragover');
+        };
+
+        fileUploadArea.ondrop = (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        };
+
+        // 更新连接状态
+        function updateConnectionStatus(status, message) {
+            const indicator = connectionStatus.querySelector('.status-indicator');
+            indicator.className = `status-indicator status-${status}`;
+            connectionStatus.innerHTML = `<span class="status-indicator status-${status}"></span>${message}`;
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            // 可以在这里添加toast通知
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        createRoomBtn.onclick = () => {
+            // 生成6位数字房间号
+            const room = Math.floor(100000 + Math.random() * 900000).toString();
+            socket.emit('create or join', room);
+            currentRoom = room;
+            createRoomBtn.disabled = true;
+            createRoomBtn.textContent = '🔄 创建中...';
+        };
+
+        joinRoomBtn.onclick = () => {
+            const room = roomIdInput.value.trim();
+            // 验证是否为6位数字
+            if (room && /^\d{6}$/.test(room)) {
+                // 先检查房间是否存在
+                socket.emit('check room', room);
+                joinRoomBtn.disabled = true;
+                joinRoomBtn.textContent = '🔄 检查中...';
+            } else {
+                roomIdInput.focus();
+                roomIdInput.style.borderColor = '#f5576c';
+                alert('请输入6位数字房间号');
+                setTimeout(() => {
+                    roomIdInput.style.borderColor = '#e1e1e1';
+                }, 2000);
+            }
+        };
+
+        // 输入框回车事件
+        roomIdInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                joinRoomBtn.click();
+            }
+        };
+
+        // 限制输入框只能输入数字，最多6位
+        roomIdInput.oninput = (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        };
+
+        // 房间检查结果
+        socket.on('room check result', (data) => {
+            console.log('Room check result:', data);
+            const joinRoomBtn = document.getElementById('join-room');
+            const roomIdInput = document.getElementById('room-id');
+            
+            if (data.exists) {
+                // 房间存在，继续加入
+                socket.emit('create or join', data.room);
+                currentRoom = data.room;
+                joinRoomBtn.textContent = '🔄 加入中...';
+            } else {
+                // 房间不存在，显示错误信息
+                joinRoomBtn.disabled = false;
+                joinRoomBtn.textContent = '🚪 加入房间';
+                roomIdInput.focus();
+                roomIdInput.style.borderColor = '#f5576c';
+                alert(`房间 ${data.room} 不存在，请检查房间号是否正确`);
+                setTimeout(() => {
+                    roomIdInput.style.borderColor = '#e1e1e1';
+                }, 2000);
+            }
+        });
+
+        socket.on('joined', (data) => {
+            console.log('Joined room', data);
+            roomContainer.classList.add('hidden');
+            fileTransferContainer.classList.remove('hidden');
+            
+            currentRoom = data.room;
+            currentUserName = data.userInfo.name;
+            currentUserNumber = data.userInfo.number;
+            roomUsers = data.roomUsers;
+            
+            roomNameSpan.textContent = data.room;
+            updateRoomInfo();
+            updateConnectionStatus('connected', '✅ 已连接，可以传输文件');
+            
+            const message = data.userInfo.isHost ? 
+                `房间 ${data.room} 创建成功，您是房主` : 
+                `已加入房间 ${data.room}，您是${data.userInfo.name}`;
+            showNotification(message, 'success');
+        });
+
+        // 当有新用户加入时
+        socket.on('user joined', (data) => {
+            roomUsers = data.roomUsers;
+            updateRoomInfo();
+            showNotification(`${data.newUser.name} 加入了房间`, 'info');
+        });
+
+        socket.on('user left', (data) => {
+            roomUsers = data.roomUsers;
+            updateRoomInfo();
+            showNotification(`${data.leftUser.name} 离开了房间`, 'info');
+        });
+
+        // 房主变更事件
+        socket.on('host changed', (data) => {
+            roomUsers = data.roomUsers;
+            // 如果当前用户成为了新房主
+            if (data.newHost.id === socket.id) {
+                currentUserName = '房主';
+                currentUserNumber = 1;
+                showNotification('您已成为新的房主！', 'success');
+            }
+            updateRoomInfo();
+        });
+
+        // 文件传输事件处理
+        let fileTransfers = new Map(); // 存储所有文件传输信息
+
+        socket.on('file-start', (data) => {
+            console.log('Receiving file start:', data);
+            
+            const transferId = `${data.fileName}-${data.timestamp}`;
+            const senderUser = roomUsers.find(u => u.name === data.senderName) || { number: 1 };
+            const senderColor = getUserColor(senderUser.number);
+            
+            const fileTransfer = {
+                id: transferId,
+                name: data.fileName,
+                size: data.fileSize,
+                totalChunks: data.totalChunks,
+                receivedChunks: 0,
+                chunks: new Array(data.totalChunks),
+                senderName: data.senderName,
+                senderColor: senderColor,
+                startTime: Date.now(),
+                status: 'receiving',
+                progress: 0
+            };
+            
+            fileTransfers.set(transferId, fileTransfer);
+            createFileItem(fileTransfer);
+        });
+
+        socket.on('file-chunk', (data) => {
+            const transferId = `${data.fileName}-${fileTransfers.get(Array.from(fileTransfers.keys()).find(id => id.startsWith(data.fileName)))?.startTime || Date.now()}`;
+            const fileTransfer = Array.from(fileTransfers.values()).find(f => f.name === data.fileName && f.status === 'receiving');
+            
+            if (!fileTransfer) return;
+            
+            // 存储数据块
+            fileTransfer.chunks[data.chunkIndex] = new Uint8Array(data.data);
+            fileTransfer.receivedChunks++;
+            fileTransfer.progress = Math.round((fileTransfer.receivedChunks / fileTransfer.totalChunks) * 100);
+            
+            updateFileItem(fileTransfer);
+        });
+
+        socket.on('file-end', (data) => {
+            const fileTransfer = Array.from(fileTransfers.values()).find(f => f.name === data.fileName && f.status === 'receiving');
+            if (!fileTransfer) return;
+            
+            // 合并所有数据块
+            const totalSize = fileTransfer.chunks.reduce((sum, chunk) => sum + (chunk ? chunk.length : 0), 0);
+            const mergedArray = new Uint8Array(totalSize);
+            let offset = 0;
+            
+            for (const chunk of fileTransfer.chunks) {
+                if (chunk) {
+                    mergedArray.set(chunk, offset);
+                    offset += chunk.length;
+                }
+            }
+            
+            // 创建文件Blob
+            fileTransfer.fileBlob = new Blob([mergedArray]);
+            fileTransfer.status = 'completed';
+            fileTransfer.progress = 100;
+            
+            updateFileItem(fileTransfer);
+            showNotification(`文件接收完成: ${data.fileName}`, 'success');
+        });
+
+        function createPeerConnection() {
+            try {
+                localConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' }
+                    ]
+                });
+                
+                localConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        socket.emit('candidate', event.candidate, currentRoom);
+                    }
+                };
+
+                localConnection.onconnectionstatechange = () => {
+                    const state = localConnection.connectionState;
+                    console.log('Connection state:', state);
+                    
+                    switch(state) {
+                        case 'connected':
+                            updateConnectionStatus('connected', '✅ 已连接，可以传输文件');
+                            showNotification('设备连接成功！现在可以传输文件了', 'success');
+                            break;
+                        case 'disconnected':
+                            updateConnectionStatus('disconnected', '❌ 连接断开');
+                            break;
+                        case 'failed':
+                            updateConnectionStatus('disconnected', '❌ 连接失败');
+                            showNotification('连接失败，请重新尝试', 'error');
+                            break;
+                    }
+                };
+                
+                // The peer that joins the room will get the data channel from this event
+                localConnection.ondatachannel = (event) => {
+                    dataChannel = event.channel;
+                    setupDataChannel();
+                };
+
+            } catch (e) {
+                console.log('Failed to create PeerConnection, exception: ' + e.message);
+                showNotification('创建连接失败: ' + e.message, 'error');
+                return;
+            }
+        }
+        
+        fileInput.onchange = () => {
+            const file = fileInput.files[0];
+            if (file) {
+                handleFileSelection(file);
+            }
+        };
+
+        function handleFileSelection(file) {
+            if (!file) return;
+            
+            // 检查文件大小 (50MB 限制)
+            if (file.size > 50 * 1024 * 1024) {
+                alert('文件大小超过50MB，请选择较小的文件');
+                return;
+            }
+            
+            // 检查是否有其他用户在房间
+            if (roomUsers.length < 2) {
+                showNotification('房间内需要至少2个用户才能传输文件', 'error');
+                return;
+            }
+            
+            sendFile(file);
+        }
+
+        function sendFile(file) {
+            const chunkSize = 64 * 1024; // 64KB chunks
+            let offset = 0;
+            let chunkIndex = 0;
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            const startTime = Date.now();
+            const timestamp = Date.now();
+
+            // 创建发送文件的传输记录
+            const transferId = `${file.name}-${timestamp}`;
+            const currentUser = roomUsers.find(u => u.name === currentUserName) || { number: 1 };
+            const senderColor = getUserColor(currentUser.number);
+            
+            const fileTransfer = {
+                id: transferId,
+                name: file.name,
+                size: file.size,
+                totalChunks: totalChunks,
+                sentChunks: 0,
+                senderName: currentUserName,
+                senderColor: senderColor,
+                startTime: startTime,
+                status: 'sending',
+                progress: 0,
+                fileBlob: file
+            };
+            
+            fileTransfers.set(transferId, fileTransfer);
+            createFileItem(fileTransfer);
+
+            // 发送文件开始信息
+            socket.emit('file-start', {
+                room: currentRoom,
+                fileName: file.name,
+                fileSize: file.size,
+                totalChunks: totalChunks,
+                senderName: currentUserName,
+                timestamp: timestamp
+            });
+
+            function sendNextChunk() {
+                if (offset >= file.size) {
+                    // 发送完成信号
+                    socket.emit('file-end', {
+                        room: currentRoom,
+                        fileName: file.name,
+                        fileSize: file.size,
+                        senderName: currentUserName,
+                        timestamp: timestamp
+                    });
+                    
+                    fileTransfer.status = 'completed';
+                    fileTransfer.progress = 100;
+                    updateFileItem(fileTransfer);
+                    return;
+                }
+
+                const chunk = file.slice(offset, offset + chunkSize);
+                const reader = new FileReader();
+                
+                reader.onload = () => {
+                    socket.emit('file-chunk', {
+                        room: currentRoom,
+                        chunkIndex: chunkIndex,
+                        totalChunks: totalChunks,
+                        data: reader.result,
+                        fileName: file.name,
+                        senderName: currentUserName
+                    });
+
+                    chunkIndex++;
+                    offset += chunkSize;
+                    fileTransfer.sentChunks = chunkIndex;
+                    fileTransfer.progress = Math.round((offset / file.size) * 100);
+                    
+                    updateFileItem(fileTransfer);
+                    
+                    // 继续发送下一块
+                    setTimeout(sendNextChunk, 10); // 小延迟避免阻塞
+                };
+                
+                reader.readAsArrayBuffer(chunk);
+            }
+
+            sendNextChunk();
+        }
+
+        function createFileItem(fileTransfer) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.id = `file-${fileTransfer.id}`;
+            fileItem.style.borderLeftColor = fileTransfer.senderColor.match(/hsl\(\d+/) ? 
+                fileTransfer.senderColor.match(/hsl\((\d+)/)[1] + ', 70%, 60%)' : '#667eea';
+            
+            updateFileItemContent(fileItem, fileTransfer);
+            messages.appendChild(fileItem);
+            
+            // 滚动到底部
+            const container = messages.parentElement;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateFileItem(fileTransfer) {
+            const fileItem = document.getElementById(`file-${fileTransfer.id}`);
+            if (fileItem) {
+                updateFileItemContent(fileItem, fileTransfer);
+            }
+        }
+
+        function updateFileItemContent(fileItem, fileTransfer) {
+            const isCompleted = fileTransfer.status === 'completed';
+            const isSending = fileTransfer.status === 'sending';
+            const isReceiving = fileTransfer.status === 'receiving';
+            
+            const elapsed = (Date.now() - fileTransfer.startTime) / 1000;
+            const processedBytes = Math.round((fileTransfer.progress / 100) * fileTransfer.size);
+            const speed = elapsed > 0 ? processedBytes / elapsed : 0;
+            const speedText = speed > 0 ? ` (${formatFileSize(speed)}/s)` : '';
+            
+            let statusText = '';
+            let statusIcon = '';
+            
+            if (isCompleted) {
+                statusText = '传输完成';
+                statusIcon = '✅';
+            } else if (isSending) {
+                statusText = `正在发送... ${fileTransfer.progress}%${speedText}`;
+                statusIcon = '📤';
+            } else if (isReceiving) {
+                statusText = `正在接收... ${fileTransfer.progress}%${speedText}`;
+                statusIcon = '📥';
+            }
+            
+            fileItem.innerHTML = `
+                <div class="file-header">
+                    <div class="file-info">
+                        <div class="file-name" title="${fileTransfer.name}">${statusIcon} ${fileTransfer.name}</div>
+                        <div class="file-details">
+                            来自: <span style="color: ${extractColorFromGradient(fileTransfer.senderColor)}; font-weight: 600;">${fileTransfer.senderName}</span> | 
+                            大小: ${formatFileSize(fileTransfer.size)} | 
+                            状态: ${statusText}
+                        </div>
+                    </div>
+                    ${isCompleted ? `
+                        <div class="file-actions">
+                            <button class="file-btn preview-btn" onclick="previewFile('${fileTransfer.id}')">
+                                👁️ 预览
+                            </button>
+                            <a class="file-btn download-btn" href="${URL.createObjectURL(fileTransfer.fileBlob)}" download="${fileTransfer.name}">
+                                📥 下载
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+                ${!isCompleted ? `
+                    <div class="progress-container">
+                        <div class="progress-text">${statusText}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${fileTransfer.progress}%"></div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function extractColorFromGradient(gradient) {
+            const match = gradient.match(/hsl\((\d+)/);
+            if (match) {
+                return `hsl(${match[1]}, 70%, 50%)`;
+            }
+            return '#667eea';
+        }
+
+        function previewFile(transferId) {
+            const fileTransfer = fileTransfers.get(transferId);
+            if (!fileTransfer || !fileTransfer.fileBlob) return;
+            
+            const url = URL.createObjectURL(fileTransfer.fileBlob);
+            const fileType = fileTransfer.name.split('.').pop().toLowerCase();
+            
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileType)) {
+                // 图片预览
+                const popup = window.open('', '_blank');
+                popup.document.write(`
+                    <html>
+                        <head><title>预览 - ${fileTransfer.name}</title></head>
+                        <body style="margin:0; background:#000; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+                            <img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain;">
+                        </body>
+                    </html>
+                `);
+            } else if (['mp4', 'webm', 'ogg', 'avi'].includes(fileType)) {
+                // 视频预览
+                const popup = window.open('', '_blank');
+                popup.document.write(`
+                    <html>
+                        <head><title>预览 - ${fileTransfer.name}</title></head>
+                        <body style="margin:0; background:#000; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+                            <video src="${url}" controls style="max-width:100%; max-height:100%;">
+                                您的浏览器不支持视频播放。
+                            </video>
+                        </body>
+                    </html>
+                `);
+            } else if (['mp3', 'wav', 'ogg', 'aac'].includes(fileType)) {
+                // 音频预览
+                const popup = window.open('', '_blank');
+                popup.document.write(`
+                    <html>
+                        <head><title>预览 - ${fileTransfer.name}</title></head>
+                        <body style="margin:0; background:#f0f0f0; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+                            <audio src="${url}" controls style="width:80%;">
+                                您的浏览器不支持音频播放。
+                            </audio>
+                        </body>
+                    </html>
+                `);
+            } else {
+                // 其他文件类型直接下载
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileTransfer.name;
+                a.click();
+            }
+        }
+
+        function updateRoomInfo() {
+            const userInfo = document.getElementById('user-info');
+            const usersList = document.getElementById('users-list');
+            const roomInfo = document.querySelector('.room-info');
+            
+            userInfo.textContent = `您是：${currentUserName}`;
+            
+            // 设置当前用户的房间信息背景色
+            const currentUser = roomUsers.find(user => user.name === currentUserName);
+            if (currentUser) {
+                const userColor = getUserColor(currentUser.number);
+                roomInfo.style.background = userColor;
+            }
+            
+            usersList.innerHTML = '在线用户：' + roomUsers.map(user => {
+                const userColor = getUserColor(user.number);
+                return `<span class="user-item" style="background: ${userColor}">${user.name}</span>`;
+            }).join('');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function setupDataChannel() {
+            dataChannel.binaryType = 'arraybuffer';
+            let receiveBuffer = [];
+            let receivedSize = 0;
+            let totalSize = 0;
+            let fileName = '';
+            let expectedChunks = 0;
+            let receivedChunks = 0;
+            let startTime = Date.now();
+
+            dataChannel.onmessage = (event) => {
+                if (typeof event.data === 'string') {
+                    const fileInfo = JSON.parse(event.data);
+                    
+                    if (fileInfo.type === 'start') {
+                        // 开始接收文件
+                        fileName = fileInfo.name;
+                        totalSize = fileInfo.size;
+                        expectedChunks = fileInfo.totalChunks;
+                        senderName = fileInfo.sender || '未知用户';
+                        receivedChunks = 0;
+                        receiveBuffer = [];
+                        receivedSize = 0;
+                        startTime = Date.now();
+                        
+                        appendMessage('peer', `📥 ${senderName} 开始发送: ${fileName} (${formatFileSize(totalSize)})`);
+                        
+                    } else if (fileInfo.type === 'end') {
+                        // 文件接收完成
+                        const receivedFile = new Blob(receiveBuffer);
+                        receiveBuffer = [];
+                        receivedSize = 0;
+                        
+                        const senderName = fileInfo.sender || '未知用户';
+                        
+                        // 验证文件大小
+                        if (Math.abs(receivedFile.size - fileInfo.size) > 1024) {
+                            showNotification(`文件大小不匹配！期望: ${formatFileSize(fileInfo.size)}, 实际: ${formatFileSize(receivedFile.size)}`, 'error');
+                        }
+
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = URL.createObjectURL(receivedFile);
+                        downloadLink.download = fileInfo.name;
+                        downloadLink.className = 'download-link';
+                        downloadLink.textContent = `📥 下载 ${fileInfo.name}`;
+                        
+                        const li = document.createElement('li');
+                        li.className = 'message-peer';
+                        li.innerHTML = `✅ ${senderName} 发送完成: ${fileInfo.name} (${formatFileSize(fileInfo.size)})<br>`;
+                        li.appendChild(downloadLink);
+                        messages.appendChild(li);
+                        
+                        // 移除进度消息
+                        const progressMsg = document.getElementById('receiving-progress');
+                        if (progressMsg) {
+                            progressMsg.remove();
+                        }
+                        
+                        showNotification(`文件接收完成: ${fileInfo.name}`, 'success');
+                        
+                        // 滚动到底部
+                        const container = messages.parentElement;
+                        container.scrollTop = container.scrollHeight;
+                    }
+                } else {
+                    // 接收数据块
+                    receiveBuffer.push(event.data);
+                    receivedSize += event.data.byteLength;
+                    receivedChunks++;
+                    
+                    let progressMsg = document.getElementById('receiving-progress');
+                    if (!progressMsg) {
+                        progressMsg = document.createElement('li');
+                        progressMsg.id = 'receiving-progress';
+                        progressMsg.className = 'message-peer';
+                        messages.appendChild(progressMsg);
+                    }
+                    
+                    const progressPercent = totalSize ? Math.round((receivedSize / totalSize) * 100) : 0;
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const speed = receivedSize / elapsed;
+                    const speedText = speed > 0 ? ` (${formatFileSize(speed)}/s)` : '';
+                    
+                    progressMsg.innerHTML = `📥 正在接收... ${progressPercent}% ${formatFileSize(receivedSize)}/${formatFileSize(totalSize)}${speedText}
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+                        </div>`;
+                        
+                    // 滚动到底部
+                    const container = messages.parentElement;
+                    container.scrollTop = container.scrollHeight;
+                }
+            };
+            
+            dataChannel.onopen = () => {
+                console.log('Data channel is open.');
+                fileInput.disabled = false;
+                updateConnectionStatus('connected', '✅ 已连接，可以传输文件');
+                if (pendingFile) {
+                    sendFile(pendingFile);
+                    pendingFile = null;
+                }
+            };
+            
+            dataChannel.onclose = () => {
+                console.log('Data channel is closed.');
+                fileInput.disabled = true;
+                updateConnectionStatus('disconnected', '❌ 连接断开');
+            };
+            
+            dataChannel.onerror = (error) => {
+                console.error('Data channel error:', error);
+                showNotification('数据通道出错', 'error');
+            };
+        }
+
+        function appendMessage(sender, message) {
+            const li = document.createElement('li');
+            li.className = sender === 'me' ? 'message-me' : 'message-peer';
+            li.textContent = message;
+            messages.appendChild(li);
+            
+            // 滚动到底部
+            const container = messages.parentElement;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+    </script>
+</body>
+</html>
