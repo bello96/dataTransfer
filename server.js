@@ -5,6 +5,7 @@ const io = require('socket.io')(http, {
   maxHttpBufferSize: 1e8 // 100MB
 });
 const os = require('os');
+const path = require('path');
 
 // 获取本机IP地址
 function getLocalIP() {
@@ -20,6 +21,11 @@ function getLocalIP() {
 }
 
 app.use(express.static('public'));
+
+// 根路由处理
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // 存储房间信息
 const rooms = new Map();
