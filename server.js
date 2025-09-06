@@ -171,7 +171,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const port = process.env.PORT || 5173;
+const port = process.env.PORT || 9525;
 const localIP = getLocalIP();
 
 http.listen(port, '0.0.0.0', () => {
