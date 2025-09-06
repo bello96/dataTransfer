@@ -453,6 +453,9 @@
     <div class="container">
         <div class="header">
             <h1>文件互传</h1>
+            <div id="connection-status" style="margin-top: 10px;">
+                <span style="color: #ff6b6b;">🔄 正在连接服务器...</span>
+            </div>
         </div>
 
         <div id="room-container">
@@ -493,11 +496,18 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io({
-            transports: ['polling'], // 只使用polling，更适合Vercel
-            timeout: 20000,
+        // 获取当前域名，确保连接正确的服务器
+        const serverUrl = window.location.protocol + '//' + window.location.host;
+        console.log('Connecting to:', serverUrl);
+        
+        const socket = io(serverUrl, {
+            transports: ['polling'], // 只使用polling，更适合代理环境
+            timeout: 30000,
             forceNew: true,
-            autoConnect: true
+            autoConnect: true,
+            upgrade: false, // 禁用升级到WebSocket
+            rememberUpgrade: false,
+            rejectUnauthorized: false // 允许自签名证书
         });
         const roomContainer = document.getElementById('room-container');
         const fileTransferContainer = document.getElementById('file-transfer-container');
@@ -519,25 +529,75 @@
 
         // Socket连接状态监听
         socket.on('connect', () => {
-            console.log('Connected to server');
+            console.log('Connected to server successfully!');
+            console.log('Socket ID:', socket.id);
             createRoomBtn.disabled = false;
             joinRoomBtn.disabled = false;
+            
+            // 更新连接状态显示
+            connectionStatus.innerHTML = '<span style="color: #4CAF50;">✅ 服务器连接成功</span>';
+            
+            // 隐藏错误提示（如果有的话）
+            const errorDiv = document.getElementById('connection-error');
+            if (errorDiv) errorDiv.style.display = 'none';
         });
 
         socket.on('connect_error', (error) => {
-            console.error('Connection error:', error);
-            alert('连接服务器失败，请刷新页面重试');
+            console.error('Connection error details:', error);
+            console.log('Current URL:', window.location.href);
+            console.log('Attempting to connect to:', serverUrl);
+            
+            // 更新连接状态显示
+            connectionStatus.innerHTML = '<span style="color: #ff6b6b;">❌ 服务器连接失败</span>';
+            
+            // 显示详细错误信息
+            showConnectionError(error);
         });
 
-        socket.on('disconnect', () => {
-            console.log('Disconnected from server');
+        socket.on('disconnect', (reason) => {
+            console.log('Disconnected from server, reason:', reason);
             createRoomBtn.disabled = true;
             joinRoomBtn.disabled = true;
+            
+            // 更新连接状态显示
+            connectionStatus.innerHTML = '<span style="color: #ff9800;">⚠️ 与服务器断开连接</span>';
         });
 
         socket.on('connected', (data) => {
             console.log('Server confirmed connection:', data);
         });
+
+        // 显示连接错误信息
+        function showConnectionError(error) {
+            let errorMsg = '连接服务器失败！\n\n';
+            errorMsg += '检测到您可能在使用代理软件(如Clash、V2Ray等)\n';
+            errorMsg += '代理地址: 127.0.0.1:7890\n\n';
+            errorMsg += '解决方案：\n';
+            errorMsg += '1. 临时关闭代理软件\n';
+            errorMsg += '2. 在代理软件中添加域名白名单：*.vercel.app\n';
+            errorMsg += '3. 切换到手机热点网络\n';
+            errorMsg += '4. 刷新页面重试\n\n';
+            errorMsg += '技术信息：' + (error.message || error.toString());
+            
+            alert(errorMsg);
+            
+            // 尝试测试基本HTTP连接
+            testBasicConnection();
+        }
+
+        // 测试基本HTTP连接
+        function testBasicConnection() {
+            fetch(serverUrl + '/test', { 
+                method: 'GET',
+                mode: 'cors'
+            })
+            .then(response => {
+                console.log('HTTP连接测试成功，状态码:', response.status);
+            })
+            .catch(error => {
+                console.error('HTTP连接也失败了:', error);
+            });
+        }
 
         // 生成用户唯一颜色
         function generateUserColor(userNumber) {
