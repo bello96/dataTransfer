@@ -1,20 +1,13 @@
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
-
-// 检测是否在Vercel环境
-const isVercel = process.env.VERCEL || process.env.NOW_REGION;
-
 const io = require('socket.io')(http, {
   maxHttpBufferSize: 1e8, // 100MB
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  transports: ['polling'], // Vercel环境只使用polling
-  allowEIO3: true,
-  pingTimeout: 60000,
-  pingInterval: 25000
+  transports: ['polling']
 });
 const os = require('os');
 const path = require('path');
@@ -39,21 +32,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// 测试连接路由
-app.get('/test', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
 // 存储房间信息
 const rooms = new Map();
 
 io.on('connection', (socket) => {
   console.log('a user connected:', socket.id);
-  console.log('Transport:', socket.conn.transport.name);
   
   // 连接确认
   socket.emit('connected', { status: 'connected', id: socket.id });
